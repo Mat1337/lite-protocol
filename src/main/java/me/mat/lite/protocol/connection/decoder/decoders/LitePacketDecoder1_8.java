@@ -1,12 +1,15 @@
 package me.mat.lite.protocol.connection.decoder.decoders;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
-import me.mat.lite.protocol.connection.PlayerConnection;
+import me.mat.lite.protocol.connection.PacketHandler;
 import me.mat.lite.protocol.connection.decoder.LitePacketDecoder;
 import me.mat.lite.protocol.connection.packet.LitePacket;
+import me.mat.lite.protocol.connection.packet.packets.CHandshakePacket;
 import me.mat.lite.protocol.util.BlockPos;
 import me.mat.lite.protocol.util.UnsignedByte;
+import me.mat.lite.protocol.util.UnsignedShort;
 import me.mat.lite.protocol.util.vector.Vec3f;
 import net.minecraft.server.v1_8_R3.*;
 import org.bukkit.craftbukkit.v1_8_R3.inventory.CraftItemStack;
@@ -18,14 +21,14 @@ import java.util.List;
 
 public class LitePacketDecoder1_8 extends LitePacketDecoder<PacketDataSerializer> {
 
-    public LitePacketDecoder1_8(PlayerConnection playerConnection, Object direction) {
-        super(playerConnection, direction);
+    public LitePacketDecoder1_8(Channel channel, PacketHandler packetHandler, Object direction, int id) {
+        super(channel, packetHandler, direction, id);
     }
 
     @Override
-    public LitePacket process(int packetID, PacketDataSerializer serializer) {
+    public LitePacket process(String protocol, int packetID, PacketDataSerializer serializer) {
         // get the packet by id
-        LitePacket packet = getPacket(packetID);
+        LitePacket packet = getPacket(protocol, packetID);
 
         // if the packet was not fetched
         if (packet == null) {
@@ -65,12 +68,16 @@ public class LitePacketDecoder1_8 extends LitePacketDecoder<PacketDataSerializer
             return serializer.readUnsignedByte();
         } else if (type.equals(short.class)) {
             return serializer.readShort();
+        } else if (type.equals(UnsignedShort.class)) {
+            return serializer.readUnsignedShort();
         } else if (type.equals(int.class)) {
             return serializer.e();
         } else if (type.equals(float.class)) {
             return serializer.readFloat();
         } else if (type.equals(double.class)) {
             return serializer.readDouble();
+        } else if (type.equals(long.class)) {
+            return serializer.readLong();
         } else if (type.equals(boolean.class)) {
             return serializer.readUnsignedByte() != 0;
         } else if (type.equals(String.class)) {
@@ -96,6 +103,8 @@ public class LitePacketDecoder1_8 extends LitePacketDecoder<PacketDataSerializer
             } catch (IOException e) {
                 return null;
             }
+        } else if (type.equals(byte[].class)) {
+            return serializer.a();
         } else {
             if (type.getSuperclass() != null
                     && type.getSuperclass().equals(Enum.class)) {
@@ -111,7 +120,8 @@ public class LitePacketDecoder1_8 extends LitePacketDecoder<PacketDataSerializer
             PacketDataSerializer dataSerializer = new PacketDataSerializer(byteBuf);
             PacketDataSerializer packetDataSerializer = new PacketDataSerializer(byteBuf.duplicate());
             int packetID = dataSerializer.e();
-            Packet<?> packet = channelHandlerContext.channel().attr(NetworkManager.c).get().a((EnumProtocolDirection) direction, packetID);
+            EnumProtocol protocol = channelHandlerContext.channel().attr(NetworkManager.c).get();
+            Packet<?> packet = protocol.a((EnumProtocolDirection) direction, packetID);
             if (packet == null) {
                 throw new IOException("Bad packet id " + packetID);
             } else {
@@ -120,9 +130,14 @@ public class LitePacketDecoder1_8 extends LitePacketDecoder<PacketDataSerializer
                     throw new IOException("Packet " + channelHandlerContext.channel().attr(NetworkManager.c).get().a() + "/" + packetID + " (" + packet.getClass().getSimpleName() + ") was larger than I expected, found " + dataSerializer.readableBytes() + " bytes extra whilst reading packet " + packetID);
                 } else {
                     list.add(packet);
-                    LitePacket litePacket = process(packetDataSerializer.e(), packetDataSerializer);
+                    LitePacket litePacket = process(protocol.toString(), packetDataSerializer.e(), packetDataSerializer);
                     if (litePacket != null) {
-                        playerConnection.onPacketReceive(litePacket);
+                        if (litePacket instanceof CHandshakePacket) {
+                            CHandshakePacket handshakePacket = (CHandshakePacket) litePacket;
+                        }
+                        if (player != null) {
+                            packetHandler.onPacketReceive(player, litePacket);
+                        }
                     }
                 }
             }

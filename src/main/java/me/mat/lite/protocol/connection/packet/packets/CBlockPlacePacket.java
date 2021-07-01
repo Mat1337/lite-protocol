@@ -5,7 +5,7 @@ import me.mat.lite.protocol.util.BlockPos;
 import me.mat.lite.protocol.util.UnsignedByte;
 import org.bukkit.inventory.ItemStack;
 
-public class BlockPlacePacket extends LitePacket {
+public class CBlockPlacePacket extends LitePacket {
 
     public BlockPos blockPos;
     public int placedBlockDirection;
@@ -15,7 +15,7 @@ public class BlockPlacePacket extends LitePacket {
     public float facingZ;
     public long timestamp;
 
-    public BlockPlacePacket() {
+    public CBlockPlacePacket() {
         super(BlockPos.class, UnsignedByte.class, ItemStack.class, UnsignedByte.class, UnsignedByte.class, UnsignedByte.class);
     }
 

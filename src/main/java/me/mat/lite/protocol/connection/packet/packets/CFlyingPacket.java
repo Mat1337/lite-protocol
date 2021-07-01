@@ -2,7 +2,7 @@ package me.mat.lite.protocol.connection.packet.packets;
 
 import me.mat.lite.protocol.connection.packet.LitePacket;
 
-public class FlyingPacket extends LitePacket {
+public class CFlyingPacket extends LitePacket {
 
     public double x;
     public double y;
@@ -13,11 +13,11 @@ public class FlyingPacket extends LitePacket {
     public boolean hasPos;
     public boolean hasLook;
 
-    public FlyingPacket() {
+    public CFlyingPacket() {
         super(boolean.class);
     }
 
-    public FlyingPacket(Class<?>... types) {
+    public CFlyingPacket(Class<?>... types) {
         super(types);
     }
 

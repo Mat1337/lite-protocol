@@ -5,12 +5,12 @@ import me.mat.lite.protocol.connection.packet.LitePacket;
 import org.bukkit.inventory.ItemStack;
 
 @ToString
-public class CreativeSlotPacket extends LitePacket {
+public class CCreativeSlotPacket extends LitePacket {
 
     public int slot;
     public ItemStack stack;
 
-    public CreativeSlotPacket() {
+    public CCreativeSlotPacket() {
         super(short.class, ItemStack.class);
     }
 

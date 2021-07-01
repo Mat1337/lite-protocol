@@ -2,14 +2,14 @@ package me.mat.lite.protocol.connection.packet.packets;
 
 import me.mat.lite.protocol.connection.packet.LitePacket;
 
-public class SteerVehiclePacket extends LitePacket {
+public class CSteerVehiclePacket extends LitePacket {
 
     public float strafeSpeed;
     public float forwardSpeed;
     public boolean jumping;
     public boolean sneaking;
 
-    public SteerVehiclePacket() {
+    public CSteerVehiclePacket() {
         super(float.class, float.class, byte.class);
     }
 

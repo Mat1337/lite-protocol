@@ -1,18 +1,20 @@
 package me.mat.lite.protocol.connection.packet.packets;
 
+import lombok.ToString;
 import me.mat.lite.protocol.connection.packet.LitePacket;
 
-public class ChatPacket extends LitePacket {
+@ToString
+public class CPingPacket extends LitePacket {
 
-    public String message;
+    private long time;
 
-    public ChatPacket() {
-        super(String.class);
+    public CPingPacket() {
+        super(long.class);
     }
 
     @Override
     public void process(Object... values) {
-        message = (String) values[0];
+        time = (long) values[0];
     }
 
 }

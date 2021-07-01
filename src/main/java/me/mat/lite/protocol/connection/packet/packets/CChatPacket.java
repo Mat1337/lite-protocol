@@ -2,17 +2,17 @@ package me.mat.lite.protocol.connection.packet.packets;
 
 import me.mat.lite.protocol.connection.packet.LitePacket;
 
-public class CloseWindowPacket extends LitePacket {
+public class CChatPacket extends LitePacket {
 
-    public int id;
+    public String message;
 
-    public CloseWindowPacket() {
-        super(byte.class);
+    public CChatPacket() {
+        super(String.class);
     }
 
     @Override
     public void process(Object... values) {
-        id = (byte) values[0];
+        message = (String) values[0];
     }
 
 }

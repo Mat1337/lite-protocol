@@ -2,13 +2,17 @@ package me.mat.lite.protocol.connection.packet.packets;
 
 import me.mat.lite.protocol.connection.packet.LitePacket;
 
-public class ArmAnimationPacket extends LitePacket {
+public class CCloseWindowPacket extends LitePacket {
 
-    public long timestamp;
+    public int id;
+
+    public CCloseWindowPacket() {
+        super(byte.class);
+    }
 
     @Override
     public void process(Object... values) {
-        timestamp = System.currentTimeMillis();
+        id = (byte) values[0];
     }
 
 }

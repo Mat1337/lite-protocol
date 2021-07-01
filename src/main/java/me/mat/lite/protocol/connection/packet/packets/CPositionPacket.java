@@ -1,8 +1,8 @@
 package me.mat.lite.protocol.connection.packet.packets;
 
-public class PositionPacket extends FlyingPacket {
+public class CPositionPacket extends CFlyingPacket {
 
-    public PositionPacket() {
+    public CPositionPacket() {
         super(double.class, double.class, double.class, boolean.class);
         hasPos = true;
     }

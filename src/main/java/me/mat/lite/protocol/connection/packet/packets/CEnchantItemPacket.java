@@ -4,12 +4,12 @@ import lombok.ToString;
 import me.mat.lite.protocol.connection.packet.LitePacket;
 
 @ToString
-public class EnchantItemPacket extends LitePacket {
+public class CEnchantItemPacket extends LitePacket {
 
     public int windowId;
     public int button;
 
-    public EnchantItemPacket() {
+    public CEnchantItemPacket() {
         super(byte.class, byte.class);
     }
 

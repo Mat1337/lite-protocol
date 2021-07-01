@@ -5,7 +5,7 @@ import me.mat.lite.protocol.connection.packet.LitePacket;
 import org.bukkit.inventory.ItemStack;
 
 @ToString
-public class WindowClickPacket extends LitePacket {
+public class CWindowClickPacket extends LitePacket {
 
     public int windowId;
     public int slot;
@@ -14,7 +14,7 @@ public class WindowClickPacket extends LitePacket {
     public int shift;
     public ItemStack item;
 
-    public WindowClickPacket() {
+    public CWindowClickPacket() {
         super(byte.class, short.class, byte.class, short.class, byte.class, ItemStack.class);
     }
 

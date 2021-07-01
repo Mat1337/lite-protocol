@@ -15,7 +15,7 @@ public class LiteProtocol implements Listener {
 
     public LiteProtocol(Plugin plugin) {
         this.plugin = plugin;
-        this.connectionManager = new ConnectionManager();
+        this.connectionManager = new ConnectionManager(plugin);
 
         // load the packet provider
         LitePacketProvider.load();

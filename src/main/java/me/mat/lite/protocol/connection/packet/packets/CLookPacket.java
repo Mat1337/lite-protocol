@@ -1,8 +1,8 @@
 package me.mat.lite.protocol.connection.packet.packets;
 
-public class LookPacket extends FlyingPacket {
+public class CLookPacket extends CFlyingPacket {
 
-    public LookPacket() {
+    public CLookPacket() {
         super(float.class, float.class, boolean.class);
         hasLook = true;
     }

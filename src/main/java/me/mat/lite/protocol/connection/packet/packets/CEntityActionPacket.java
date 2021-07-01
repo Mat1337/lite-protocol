@@ -2,13 +2,13 @@ package me.mat.lite.protocol.connection.packet.packets;
 
 import me.mat.lite.protocol.connection.packet.LitePacket;
 
-public class EntityActionPacket extends LitePacket {
+public class CEntityActionPacket extends LitePacket {
 
     public int entityID;
     public Action animation;
     public int auxData;
 
-    public EntityActionPacket() {
+    public CEntityActionPacket() {
         super(int.class, Action.class, int.class);
     }
 

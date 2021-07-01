@@ -4,13 +4,13 @@ import lombok.ToString;
 import me.mat.lite.protocol.connection.packet.LitePacket;
 
 @ToString
-public class TransactionPacket extends LitePacket {
+public class CTransactionPacket extends LitePacket {
 
     public int windowId;
     public short uid;
     public boolean accepted;
 
-    public TransactionPacket() {
+    public CTransactionPacket() {
         super(byte.class, short.class, byte.class);
     }
 

@@ -2,12 +2,9 @@ package me.mat.lite.protocol.connection;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandler;
-import io.netty.handler.codec.ByteToMessageDecoder;
 import lombok.Getter;
 import me.mat.lite.protocol.connection.decoder.LitePacketDecoder;
 import me.mat.lite.protocol.connection.decoder.decoders.LitePacketDecoder1_8;
-import me.mat.lite.protocol.connection.packet.LitePacket;
-import me.mat.lite.protocol.connection.packet.packets.*;
 import me.mat.lite.protocol.util.ReflectionUtil;
 import me.mat.lite.protocol.util.accessor.accessors.ConstructorAccessor;
 import me.mat.lite.protocol.util.accessor.accessors.FieldAccessor;
@@ -49,72 +46,19 @@ public class PlayerConnection {
             ReflectionUtil.getMinecraftClass("EnumProtocolDirection")
     );
 
+    private LitePacketDecoder<?> liteDecoder;
     private final ConnectionManager connectionManager;
     private final Player player;
+    private final int id;
 
-    // used for keeping track of the decoders
-    private LitePacketDecoder<?> liteDecoder;
-
-    public PlayerConnection(ConnectionManager connectionManager, Player player) {
+    public PlayerConnection(LitePacketDecoder<?> liteDecoder, ConnectionManager connectionManager, Player player, int id) {
+        this.liteDecoder = liteDecoder;
         this.connectionManager = connectionManager;
         this.player = player;
+        this.id = id;
 
         // inject the channel handler
         this.load();
-    }
-
-    public void onPacketReceive(LitePacket packet) {
-        if (packet instanceof KeepAlivePacket) {
-            KeepAlivePacket keepAlivePacket = (KeepAlivePacket) packet;
-            player.sendMessage("KeepAlive: " + keepAlivePacket.entityID);
-        } else if (packet instanceof ChatPacket) {
-            ChatPacket chatPacket = (ChatPacket) packet;
-            player.sendMessage("Your message: " + chatPacket.message);
-        } else if (packet instanceof UseEntityPacket) {
-            UseEntityPacket useEntityPacket = (UseEntityPacket) packet;
-            player.sendMessage(useEntityPacket.toString());
-        } else if (packet instanceof BlockDigPacket) {
-            BlockDigPacket blockDigPacket = (BlockDigPacket) packet;
-            if (blockDigPacket.type == BlockDigPacket.Type.RELEASE_USE_ITEM) {
-                player.sendMessage("You have released your item");
-            } else if (blockDigPacket.type == BlockDigPacket.Type.START_DESTROY_BLOCK) {
-                player.sendMessage("x: " + blockDigPacket.blockPos.x + ", y: " + blockDigPacket.blockPos.y + ", z: " + blockDigPacket.blockPos.z);
-            }
-        } else if (packet instanceof BlockPlacePacket) {
-            BlockPlacePacket blockPlacePacket = (BlockPlacePacket) packet;
-            player.sendMessage("---");
-            player.sendMessage(blockPlacePacket.stack.getType().toString());
-            player.sendMessage(blockPlacePacket.blockPos.toString());
-            player.sendMessage("x: " + blockPlacePacket.facingX + ", y: " + blockPlacePacket.facingY + " z: " + blockPlacePacket.facingZ);
-            player.sendMessage("---");
-        } else if (packet instanceof HeldItemSlotPacket) {
-            HeldItemSlotPacket heldItemSlotPacket = (HeldItemSlotPacket) packet;
-            player.sendMessage("Slot changed to: " + heldItemSlotPacket.slot);
-        } else if (packet instanceof ArmAnimationPacket) {
-            ArmAnimationPacket armAnimationPacket = (ArmAnimationPacket) packet;
-            player.sendMessage("You have swung your arm: " + armAnimationPacket.timestamp);
-        } else if (packet instanceof EntityActionPacket) {
-            EntityActionPacket entityActionPacket = (EntityActionPacket) packet;
-            player.sendMessage("id: " + entityActionPacket.entityID + ", a: " + entityActionPacket.animation.toString());
-        } else if (packet instanceof SteerVehiclePacket) {
-            SteerVehiclePacket steerVehiclePacket = (SteerVehiclePacket) packet;
-            player.sendMessage("fs: " + steerVehiclePacket.forwardSpeed + ", ss: " + steerVehiclePacket.strafeSpeed + ", j: " + steerVehiclePacket.jumping + ", s: " + steerVehiclePacket.sneaking);
-        } else if (packet instanceof CloseWindowPacket) {
-            CloseWindowPacket closeWindowPacket = (CloseWindowPacket) packet;
-            player.sendMessage("You have closed a window with id of: " + closeWindowPacket.id);
-        } else if (packet instanceof WindowClickPacket) {
-            WindowClickPacket windowClickPacket = (WindowClickPacket) packet;
-            player.sendMessage(windowClickPacket.toString());
-        } else if (packet instanceof TransactionPacket) {
-            TransactionPacket transactionPacket = (TransactionPacket) packet;
-            player.sendMessage(transactionPacket.toString());
-        } else if (packet instanceof CreativeSlotPacket) {
-            CreativeSlotPacket creativeSlotPacket = (CreativeSlotPacket) packet;
-            player.sendMessage(creativeSlotPacket.toString());
-        } else if (packet instanceof EnchantItemPacket){
-            EnchantItemPacket enchantItemPacket = (EnchantItemPacket) packet;
-            player.sendMessage(enchantItemPacket.toString());
-        }
     }
 
     private void load() {
@@ -136,19 +80,14 @@ public class PlayerConnection {
         channel.eventLoop().execute(() -> {
             Object decoder = channel.pipeline().get("decoder");
             if (decoder != null) {
-                if (decoder instanceof ByteToMessageDecoder) {
-                    if (liteDecoder == null) {
-                        Object direction = DIRECTION.get(decoder);
-                        liteDecoder = new LitePacketDecoder1_8(this, direction);
-                        if (direction != null) {
-                            channel.pipeline().replace(
-                                    "decoder",
-                                    "decoder",
-                                    liteDecoder
-                            );
-                        }
-                    }
+                if (!LitePacketDecoder.class.isInstance(decoder)) {
+                    LitePacketDecoder1_8 d = new LitePacketDecoder1_8(channel, connectionManager, liteDecoder.getDirection(), liteDecoder.getId());
+                    channel.pipeline().replace("decoder", "decoder", d);
+                    liteDecoder = d;
                 }
+                liteDecoder.setPlayer(player);
+                decoder = channel.pipeline().get("decoder");
+                player.sendMessage(decoder.getClass().getName());
             }
         });
     }
@@ -185,9 +124,6 @@ public class PlayerConnection {
                     packetDecoder
             );
         });
-
-        // null the lite decoder
-        liteDecoder = null;
     }
 
     private Channel getChannel() {

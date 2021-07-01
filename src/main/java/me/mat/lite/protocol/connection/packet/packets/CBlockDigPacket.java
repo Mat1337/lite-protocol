@@ -5,13 +5,13 @@ import me.mat.lite.protocol.util.BlockPos;
 import me.mat.lite.protocol.util.Direction;
 import me.mat.lite.protocol.util.UnsignedByte;
 
-public class BlockDigPacket extends LitePacket {
+public class CBlockDigPacket extends LitePacket {
 
     public Type type;
     public BlockPos blockPos;
     public Direction direction;
 
-    public BlockDigPacket() {
+    public CBlockDigPacket() {
         super(Type.class, BlockPos.class, UnsignedByte.class);
     }
 

@@ -5,13 +5,13 @@ import me.mat.lite.protocol.connection.packet.LitePacket;
 import me.mat.lite.protocol.util.vector.Vec3f;
 
 @ToString
-public class UseEntityPacket extends LitePacket {
+public class CUseEntityPacket extends LitePacket {
 
     public int entityID;
     public Action action;
     public Vec3f look;
 
-    public UseEntityPacket() {
+    public CUseEntityPacket() {
         super(int.class, Action.class, Vec3f.class);
     }
 

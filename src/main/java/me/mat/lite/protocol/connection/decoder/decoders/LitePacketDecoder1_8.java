@@ -98,15 +98,16 @@ public class LitePacketDecoder1_8 extends LitePacketDecoder<PacketDataSerializer
                 if (dataSerializer.readableBytes() > 0) {
                     throw new IOException("Packet " + channelHandlerContext.channel().attr(NetworkManager.c).get().a() + "/" + packetID + " (" + packet.getClass().getSimpleName() + ") was larger than I expected, found " + dataSerializer.readableBytes() + " bytes extra whilst reading packet " + packetID);
                 } else {
-                    list.add(packet);
                     LitePacket litePacket = process(protocol.toString(), packetDataSerializer.e(), packetDataSerializer);
-                    if (litePacket != null) {
-                        invokeListeners(
-                                channelHandlerContext,
-                                litePacket,
-                                protocol.equals(EnumProtocol.HANDSHAKING),
-                                protocol.equals(EnumProtocol.LOGIN)
-                        );
+                    if (litePacket == null) {
+                        list.add(packet);
+                        return;
+                    }
+
+                    if (!invokeListeners(channelHandlerContext, litePacket,
+                            protocol.equals(EnumProtocol.HANDSHAKING),
+                            protocol.equals(EnumProtocol.LOGIN))) {
+                        list.add(packet);
                     }
                 }
             }

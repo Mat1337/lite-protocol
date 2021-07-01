@@ -54,7 +54,7 @@ public abstract class LitePacketDecoder<T> extends ByteToMessageDecoder {
 
     public abstract Object processField(LitePacket packet, T serializer, Class<?> type);
 
-    protected void invokeListeners(ChannelHandlerContext context, LitePacket packet, boolean handShake, boolean login) {
+    protected boolean invokeListeners(ChannelHandlerContext context, LitePacket packet, boolean handShake, boolean login) {
         // get the channel
         Channel channel = context.channel();
 
@@ -73,22 +73,17 @@ public abstract class LitePacketDecoder<T> extends ByteToMessageDecoder {
                 clientHandshakeListener.setProtocol(channel, handshakePacket.protocolVersion);
             }
 
-            // invoke the client handshake listener
-            clientHandshakeListener.onHandshakeReceive(address, packet);
 
-            // return out of the method
-            return;
+            // invoke the client handshake listener
+            return clientHandshakeListener.onHandshakeReceive(address, packet);
         } else if (login) {
 
             // invoke the client login listener
-            clientLoginListener.onLoginReceive(address, packet);
-
-            // return out of the method
-            return;
+            return clientLoginListener.onLoginReceive(address, packet);
         }
 
         // else invoke the player packet listener
-        clientPacketListener.onPacketReceive(player, packet);
+        return clientPacketListener.onPacketReceive(player, packet);
     }
 
     /**

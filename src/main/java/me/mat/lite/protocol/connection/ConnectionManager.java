@@ -9,6 +9,7 @@ import me.mat.lite.protocol.connection.listener.ClientHandshakeListener;
 import me.mat.lite.protocol.connection.listener.ClientLoginListener;
 import me.mat.lite.protocol.connection.listener.ClientPacketListener;
 import me.mat.lite.protocol.connection.packet.LitePacket;
+import me.mat.lite.protocol.connection.packet.packets.CChatPacket;
 import me.mat.lite.protocol.util.ProtocolVersion;
 import me.mat.lite.protocol.util.ReflectionUtil;
 import me.mat.lite.protocol.util.accessor.accessors.FieldAccessor;
@@ -116,6 +117,13 @@ public class ConnectionManager implements Listener, ClientLoginListener, ClientH
 
     @Override
     public boolean onPacketReceive(Player player, LitePacket packet) {
+        if (packet instanceof CChatPacket) {
+            CChatPacket chatPacket = (CChatPacket) packet;
+            if (chatPacket.message.equals("/ping")) {
+                player.sendMessage("pong");
+                return true;
+            }
+        }
         return false;
     }
 

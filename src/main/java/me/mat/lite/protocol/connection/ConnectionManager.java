@@ -3,6 +3,8 @@ package me.mat.lite.protocol.connection;
 import io.netty.channel.*;
 import me.mat.lite.protocol.connection.decoder.LitePacketDecoder;
 import me.mat.lite.protocol.connection.decoder.decoders.LitePacketDecoder1_8;
+import me.mat.lite.protocol.connection.encoder.LitePacketEncoder;
+import me.mat.lite.protocol.connection.encoder.encoders.LitePacketEncoder1_8;
 import me.mat.lite.protocol.connection.listener.ClientHandshakeListener;
 import me.mat.lite.protocol.connection.listener.ClientLoginListener;
 import me.mat.lite.protocol.connection.listener.ClientPacketListener;
@@ -27,8 +29,14 @@ public class ConnectionManager implements Listener, ClientLoginListener, ClientH
     // name of the vanilla decoder in the pipeline
     public static final String VANILLA_DECODER_KEY = "decoder";
 
+    // name of the vanilla encoder in the pipeline
+    public static final String VANILLA_ENCODER_KEY = "encoder";
+
     // name of the lite decoder in the pipeline
     public static final String LITE_DECODER_KEY = "lite-decoder";
+
+    // name of the lite encoder in the pipeline
+    public static final String LITE_ENCODER_KEY = "lite-encoder";
 
     // used for accessing the MinecraftServer handle
     private static final FieldAccessor SERVER_HANDLE = new FieldAccessor(
@@ -52,8 +60,15 @@ public class ConnectionManager implements Listener, ClientLoginListener, ClientH
     );
 
     // used for accessing the direction of the packet decoder
-    private static final FieldAccessor DIRECTION = new FieldAccessor(
+    private static final FieldAccessor DECODER_DIRECTION = new FieldAccessor(
             ReflectionUtil.getMinecraftClass("PacketDecoder"),
+            ReflectionUtil.getMinecraftClass("EnumProtocolDirection"),
+            0
+    );
+
+    // used for accessing the direction of the packet encoder
+    private static final FieldAccessor ENCODER_DIRECTION = new FieldAccessor(
+            ReflectionUtil.getMinecraftClass("PacketEncoder"),
             ReflectionUtil.getMinecraftClass("EnumProtocolDirection"),
             0
     );
@@ -71,8 +86,11 @@ public class ConnectionManager implements Listener, ClientLoginListener, ClientH
     // used for storing player protocols
     private final Map<Player, ProtocolVersion> protocolVersions;
 
-    // used for caching the decoder
+    // used for caching the lite decoder
     private LitePacketDecoder<?> liteDecoder;
+
+    // used for caching the lite encoder
+    private LitePacketEncoder<?> liteEncoder;
 
     public ConnectionManager(Plugin plugin) {
         // define the maps that handle protocol fetching
@@ -163,13 +181,62 @@ public class ConnectionManager implements Listener, ClientLoginListener, ClientH
     }
 
     /**
-     * Injects the the connection manager
+     * Injects the the encoder
      * into the channel
      *
      * @param channel channel that you want to inject in
      */
 
-    private void inject(Channel channel) {
+    private void injectEncoder(Channel channel) {
+        // if the lite encoder is valid
+        if (liteEncoder != null) {
+            // return out of the method
+            return;
+        }
+
+        // get the channel pipeline
+        ChannelPipeline pipeline = channel.pipeline();
+
+        // get the packet decoder from the pipeline
+        Object encoder = pipeline.get(VANILLA_ENCODER_KEY);
+
+        // if the encoder is invalid
+        if (encoder == null) {
+            // return out of the method
+            return;
+        }
+
+        // get the direction of the encoder
+        Object direction = ENCODER_DIRECTION.get(encoder);
+
+        // if the direction of the encoder is invalid
+        if (direction == null) {
+            // return out of the method
+            return;
+        }
+
+        // create the decoder
+        liteEncoder = new LitePacketEncoder1_8(
+                channel,
+                direction
+        );
+
+        // replace the original decoder with the lite decoder
+        pipeline.addAfter(
+                VANILLA_ENCODER_KEY,
+                LITE_ENCODER_KEY,
+                liteEncoder
+        );
+    }
+
+    /**
+     * Injects the the decoder
+     * into the channel
+     *
+     * @param channel channel that you want to inject in
+     */
+
+    private void injectDecoder(Channel channel) {
         // if the lite decoder is valid
         if (liteDecoder != null) {
             // return out of the method
@@ -189,7 +256,7 @@ public class ConnectionManager implements Listener, ClientLoginListener, ClientH
         }
 
         // get the direction of the decoder
-        Object direction = DIRECTION.get(decoder);
+        Object direction = DECODER_DIRECTION.get(decoder);
 
         // if the direction of the decoder is invalid
         if (direction == null) {
@@ -226,7 +293,13 @@ public class ConnectionManager implements Listener, ClientLoginListener, ClientH
             protected void initChannel(Channel channel) {
                 try {
                     // attempt to inject to the channel
-                    channel.eventLoop().execute(() -> inject(channel));
+                    channel.eventLoop().execute(() -> {
+                        // inject the decoder
+                        injectDecoder(channel);
+
+                        // inject the encoder
+                        injectEncoder(channel);
+                    });
                 } catch (Exception e) {
                     // if something goes wrong log it to the console
                     System.err.println("Error injecting into channel " + channel.toString());

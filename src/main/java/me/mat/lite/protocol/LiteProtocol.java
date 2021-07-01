@@ -20,6 +20,7 @@ public class LiteProtocol implements Listener {
         // load the packet provider
         LitePacketProvider.load();
 
+        // register the connection manager so it can receive events
         this.register(connectionManager);
     }
 
@@ -31,8 +32,6 @@ public class LiteProtocol implements Listener {
 
     @EventHandler
     private void pluginDisable(PluginDisableEvent event) {
-        System.err.println("plugin disable");
-
         // close the connection manager
         connectionManager.close();
     }

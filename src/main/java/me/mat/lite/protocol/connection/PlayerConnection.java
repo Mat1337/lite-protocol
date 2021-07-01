@@ -2,6 +2,7 @@ package me.mat.lite.protocol.connection;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandler;
+import io.netty.channel.ChannelPipeline;
 import lombok.Getter;
 import me.mat.lite.protocol.connection.decoder.LitePacketDecoder;
 import me.mat.lite.protocol.connection.decoder.decoders.LitePacketDecoder1_8;
@@ -14,83 +15,126 @@ import org.bukkit.entity.Player;
 @Getter
 public class PlayerConnection {
 
+    // used for accessing the EntityPlayer handle
     private static final MethodAccessor GET_HANDLE = new MethodAccessor(
             ReflectionUtil.getBukkitEntityClass("CraftPlayer"),
             "getHandle"
     );
 
+    // used for accessing the PlayerConnection handle
     private static final FieldAccessor PLAYER_CONNECTION = new FieldAccessor(
             ReflectionUtil.getMinecraftClass("EntityPlayer"),
             "playerConnection"
     );
 
+    // used for accessing the NetworkManager handle
     private static final FieldAccessor NETWORK_MANAGER
             = new FieldAccessor(
             ReflectionUtil.getMinecraftClass("PlayerConnection"),
             "networkManager"
     );
 
+    // used for accessing the Channel handle
     private static final FieldAccessor CHANNEL = new FieldAccessor(
             ReflectionUtil.getMinecraftClass("NetworkManager"),
             "channel"
     );
 
+    // used for accessing the EnumProtocolDirection from the PacketDecoder
     private static final FieldAccessor DIRECTION = new FieldAccessor(
             ReflectionUtil.getMinecraftClass("PacketDecoder"),
             ReflectionUtil.getMinecraftClass("EnumProtocolDirection"),
             0
     );
 
+    // used for creating new PacketDecoders
     private static final ConstructorAccessor PACKET_DECODER = new ConstructorAccessor(
             ReflectionUtil.getMinecraftClass("PacketDecoder"),
             ReflectionUtil.getMinecraftClass("EnumProtocolDirection")
     );
 
-    private LitePacketDecoder<?> liteDecoder;
-    private final ConnectionManager connectionManager;
     private final Player player;
-    private final int id;
+    private final ConnectionManager connectionManager;
 
-    public PlayerConnection(LitePacketDecoder<?> liteDecoder, ConnectionManager connectionManager, Player player, int id) {
-        this.liteDecoder = liteDecoder;
-        this.connectionManager = connectionManager;
+    private LitePacketDecoder<?> liteDecoder;
+
+    public PlayerConnection(Player player, ConnectionManager connectionManager) {
         this.player = player;
-        this.id = id;
+        this.connectionManager = connectionManager;
 
-        // inject the channel handler
-        this.load();
+        // open the connection
+        this.open();
     }
 
-    private void load() {
+    /**
+     * Opens the connection to the player
+     */
+
+    public void open() {
         // get the channel
         Channel channel = getChannel();
 
-        // if the channel is invalid
-        if (channel == null) {
+        System.out.println("Player Address: " + channel.remoteAddress());
 
+        // open the connection to the player
+        channel.eventLoop().execute(() -> open(channel));
+    }
+
+    /**
+     * Opens the connection to the player
+     */
+
+    private void open(Channel channel) {
+        // get the channel pipeline
+        ChannelPipeline pipeline = channel.pipeline();
+
+        // get the decoder
+        Object decoder = pipeline.get(ConnectionManager.DECODER_KEY);
+
+        // if the decoder is invalid
+        if (decoder == null) {
             // return out of the method
             return;
         }
 
-        // execute the inject method
-        channel.eventLoop().execute(() -> inject(channel));
+        // if the decoder is not a lite packet decoder
+        if (!(decoder instanceof LitePacketDecoder)) {
+
+            // get the direction from the decoder
+            Object direction = DIRECTION.get(decoder);
+
+            // if the direction is invalid
+            if (direction == null) {
+                // return out of the method
+                return;
+            }
+
+            // else create the lite decoder
+            liteDecoder = new LitePacketDecoder1_8(
+                    channel,
+                    connectionManager,
+                    connectionManager,
+                    direction
+            );
+
+            // replace the vanilla decoder with the lite decoder
+            pipeline.replace(
+                    ConnectionManager.DECODER_KEY,
+                    ConnectionManager.DECODER_KEY,
+                    liteDecoder
+            );
+        } else {
+            // else save the decoder
+            liteDecoder = (LitePacketDecoder<?>) decoder;
+        }
+
+        // update the player instance in the decoder
+        liteDecoder.setPlayer(player);
     }
 
-    private void inject(Channel channel) {
-        channel.eventLoop().execute(() -> {
-            Object decoder = channel.pipeline().get("decoder");
-            if (decoder != null) {
-                if (!LitePacketDecoder.class.isInstance(decoder)) {
-                    LitePacketDecoder1_8 d = new LitePacketDecoder1_8(channel, connectionManager, liteDecoder.getDirection(), liteDecoder.getId());
-                    channel.pipeline().replace("decoder", "decoder", d);
-                    liteDecoder = d;
-                }
-                liteDecoder.setPlayer(player);
-                decoder = channel.pipeline().get("decoder");
-                player.sendMessage(decoder.getClass().getName());
-            }
-        });
-    }
+    /**
+     * Closes the connection to the player
+     */
 
     public void close() {
         // get the channel
@@ -98,45 +142,91 @@ public class PlayerConnection {
 
         // if the channel is invalid
         if (channel == null) {
-
             // return out of the method
             return;
         }
 
-        // create a vanilla packet decoder
-        ChannelHandler packetDecoder
+        // else close the channel
+        channel.eventLoop().execute(() -> close(channel));
+    }
+
+    /**
+     * Closes the connection to the player
+     *
+     * @param channel channel that the connection is on
+     */
+
+    private void close(Channel channel) {
+        // if the lite decoder instance is invalid
+        if (liteDecoder == null) {
+            // return out of the method
+            return;
+        }
+
+        // get the channel pipeline
+        ChannelPipeline pipeline = channel.pipeline();
+
+        // get the current decoder
+        Object currentDecoder
+                = pipeline.get(ConnectionManager.DECODER_KEY);
+
+        // if the current decoder is invalid
+        if (currentDecoder == null) {
+            // return out of the method
+            return;
+        }
+
+        // create a new vanilla decoder
+        ChannelHandler vanillaDecoder
                 = PACKET_DECODER.newInstance(liteDecoder.getDirection());
 
-        // remove the handler from the channel
-        channel.eventLoop().execute(() -> {
-
-            // if the pipeline does not contain a decoder
-            if (channel.pipeline().get("decoder") == null) {
-
-                // return out of the method
-                return;
-            }
-
-            // replace the pipeline decoder with vanilla decoder
-            channel.pipeline().replace(
-                    "decoder",
-                    "decoder",
-                    packetDecoder
-            );
-        });
+        // replace the vanilla decoder with the lite decoder
+        pipeline.replace(
+                ConnectionManager.DECODER_KEY,
+                ConnectionManager.DECODER_KEY,
+                vanillaDecoder
+        );
     }
+
+    /**
+     * Gets the Channel handle
+     * from the NetworkManager instance
+     *
+     * @return {@link Channel}
+     */
 
     private Channel getChannel() {
         return CHANNEL.get(getNetworkManager());
     }
 
+    /**
+     * Gets the NetworkManager handle
+     * from the PlayerConnection instance
+     *
+     * @return NetworkManager handle
+     */
+
     private Object getNetworkManager() {
         return NETWORK_MANAGER.get(getPlayerConnection());
     }
 
+    /**
+     * Gets the PlayerConnection handle
+     * from the EntityPlayer instance
+     *
+     * @return PlayerConnection handle
+     */
+
     private Object getPlayerConnection() {
         return PLAYER_CONNECTION.get(getEntityPlayer());
     }
+
+    /**
+     * Gets the EntityPlayer handle
+     * from the spigot Player instance
+     *
+     * @return EntityPlayer handle
+     */
 
     private Object getEntityPlayer() {
         return GET_HANDLE.invoke(player);

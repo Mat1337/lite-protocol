@@ -15,10 +15,10 @@ public class LitePacketProvider {
     public static void load() {
         Stream.of(Protocol.values()).forEach(protocol -> PROTOCOL_MAP.put(protocol.toString(), new HashMap<>()));
 
-        loadHandShaking(Protocol.HANDSHAKING);
-        loadPlay(Protocol.PLAY);
-        loadStatus(Protocol.STATUS);
-        loadLogin(Protocol.LOGIN);
+        loadHandShaking();
+        loadPlay();
+        loadStatus();
+        loadLogin();
     }
 
     public static Class<?> getPacket(String protocol, String direction, int id) {
@@ -39,39 +39,55 @@ public class LitePacketProvider {
         return classes.get(id);
     }
 
-    private static void loadHandShaking(Protocol protocol) {
-        addPacket(protocol, ProtocolDirection.SERVERBOUND, CHandshakePacket.class);
+    private static void loadHandShaking() {
+        addHandShakePacket(ProtocolDirection.SERVERBOUND, CHandshakePacket.class);
     }
 
-    private static void loadPlay(Protocol protocol) {
-        addPacket(protocol, ProtocolDirection.SERVERBOUND, CKeepAlivePacket.class);
-        addPacket(protocol, ProtocolDirection.SERVERBOUND, CChatPacket.class);
-        addPacket(protocol, ProtocolDirection.SERVERBOUND, CUseEntityPacket.class);
-        addPacket(protocol, ProtocolDirection.SERVERBOUND, CFlyingPacket.class);
-        addPacket(protocol, ProtocolDirection.SERVERBOUND, CPositionPacket.class);
-        addPacket(protocol, ProtocolDirection.SERVERBOUND, CLookPacket.class);
-        addPacket(protocol, ProtocolDirection.SERVERBOUND, CPositionLookPacket.class);
-        addPacket(protocol, ProtocolDirection.SERVERBOUND, CBlockDigPacket.class);
-        addPacket(protocol, ProtocolDirection.SERVERBOUND, CBlockPlacePacket.class);
-        addPacket(protocol, ProtocolDirection.SERVERBOUND, CHeldItemSlotPacket.class);
-        addPacket(protocol, ProtocolDirection.SERVERBOUND, CArmAnimationPacket.class);
-        addPacket(protocol, ProtocolDirection.SERVERBOUND, CEntityActionPacket.class);
-        addPacket(protocol, ProtocolDirection.SERVERBOUND, CSteerVehiclePacket.class);
-        addPacket(protocol, ProtocolDirection.SERVERBOUND, CCloseWindowPacket.class);
-        addPacket(protocol, ProtocolDirection.SERVERBOUND, CWindowClickPacket.class);
-        addPacket(protocol, ProtocolDirection.SERVERBOUND, CTransactionPacket.class);
-        addPacket(protocol, ProtocolDirection.SERVERBOUND, CCreativeSlotPacket.class);
-        addPacket(protocol, ProtocolDirection.SERVERBOUND, CEnchantItemPacket.class);
+    private static void loadPlay() {
+        addPlayPacket(ProtocolDirection.SERVERBOUND, CKeepAlivePacket.class);
+        addPlayPacket(ProtocolDirection.SERVERBOUND, CChatPacket.class);
+        addPlayPacket(ProtocolDirection.SERVERBOUND, CUseEntityPacket.class);
+        addPlayPacket(ProtocolDirection.SERVERBOUND, CFlyingPacket.class);
+        addPlayPacket(ProtocolDirection.SERVERBOUND, CPositionPacket.class);
+        addPlayPacket(ProtocolDirection.SERVERBOUND, CLookPacket.class);
+        addPlayPacket(ProtocolDirection.SERVERBOUND, CPositionLookPacket.class);
+        addPlayPacket(ProtocolDirection.SERVERBOUND, CBlockDigPacket.class);
+        addPlayPacket(ProtocolDirection.SERVERBOUND, CBlockPlacePacket.class);
+        addPlayPacket(ProtocolDirection.SERVERBOUND, CHeldItemSlotPacket.class);
+        addPlayPacket(ProtocolDirection.SERVERBOUND, CArmAnimationPacket.class);
+        addPlayPacket(ProtocolDirection.SERVERBOUND, CEntityActionPacket.class);
+        addPlayPacket(ProtocolDirection.SERVERBOUND, CSteerVehiclePacket.class);
+        addPlayPacket(ProtocolDirection.SERVERBOUND, CCloseWindowPacket.class);
+        addPlayPacket(ProtocolDirection.SERVERBOUND, CWindowClickPacket.class);
+        addPlayPacket(ProtocolDirection.SERVERBOUND, CTransactionPacket.class);
+        addPlayPacket(ProtocolDirection.SERVERBOUND, CCreativeSlotPacket.class);
+        addPlayPacket(ProtocolDirection.SERVERBOUND, CEnchantItemPacket.class);
     }
 
-    private static void loadStatus(Protocol protocol) {
-        addPacket(protocol, ProtocolDirection.SERVERBOUND, CStartPacket.class);
-        addPacket(protocol, ProtocolDirection.SERVERBOUND, CPingPacket.class);
+    private static void loadStatus() {
+        addStatusPacket(ProtocolDirection.SERVERBOUND, CStartPacket.class);
+        addStatusPacket(ProtocolDirection.SERVERBOUND, CPingPacket.class);
     }
 
-    private static void loadLogin(Protocol protocol) {
-        addPacket(protocol, ProtocolDirection.SERVERBOUND, CLoginStartPacket.class);
-        addPacket(protocol, ProtocolDirection.SERVERBOUND, CLoginEncryptionBeginPacket.class);
+    private static void loadLogin() {
+        addLoginPacket(ProtocolDirection.SERVERBOUND, CLoginStartPacket.class);
+        addLoginPacket(ProtocolDirection.SERVERBOUND, CLoginEncryptionBeginPacket.class);
+    }
+
+    private static void addHandShakePacket(ProtocolDirection direction, Class<?> packet) {
+        addPacket(Protocol.HANDSHAKING, direction, packet);
+    }
+
+    private static void addPlayPacket(ProtocolDirection direction, Class<?> packet) {
+        addPacket(Protocol.PLAY, direction, packet);
+    }
+
+    private static void addStatusPacket(ProtocolDirection direction, Class<?> packet) {
+        addPacket(Protocol.STATUS, direction, packet);
+    }
+
+    private static void addLoginPacket(ProtocolDirection direction, Class<?> packet) {
+        addPacket(Protocol.LOGIN, direction, packet);
     }
 
     private static void addPacket(Protocol protocol, ProtocolDirection direction, Class<?> packet) {

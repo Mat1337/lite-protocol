@@ -3,10 +3,10 @@ package me.mat.lite.protocol.connection.decoder.decoders;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
-import me.mat.lite.protocol.connection.PacketHandler;
+import me.mat.lite.protocol.connection.ClientHandshakeListener;
+import me.mat.lite.protocol.connection.ClientPacketListener;
 import me.mat.lite.protocol.connection.decoder.LitePacketDecoder;
 import me.mat.lite.protocol.connection.packet.LitePacket;
-import me.mat.lite.protocol.connection.packet.packets.CHandshakePacket;
 import me.mat.lite.protocol.util.BlockPos;
 import me.mat.lite.protocol.util.UnsignedByte;
 import me.mat.lite.protocol.util.UnsignedShort;
@@ -16,44 +16,12 @@ import org.bukkit.craftbukkit.v1_8_R3.inventory.CraftItemStack;
 import org.bukkit.inventory.ItemStack;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 
 public class LitePacketDecoder1_8 extends LitePacketDecoder<PacketDataSerializer> {
 
-    public LitePacketDecoder1_8(Channel channel, PacketHandler packetHandler, Object direction, int id) {
-        super(channel, packetHandler, direction, id);
-    }
-
-    @Override
-    public LitePacket process(String protocol, int packetID, PacketDataSerializer serializer) {
-        // get the packet by id
-        LitePacket packet = getPacket(protocol, packetID);
-
-        // if the packet was not fetched
-        if (packet == null) {
-
-            // return out of the method
-            return null;
-        }
-
-        // define the list that will hold all the objects
-        List<Object> objects = new ArrayList<>();
-
-        // loop through all the packet field types
-        for (Class<?> type : packet.getTypes()) {
-            // process the field
-            Object value = processField(packet, serializer, type);
-
-            // add the value to the objects
-            objects.add(value);
-        }
-
-        // process the packet
-        packet.process(objects.toArray());
-
-        // return the packet
-        return packet;
+    public LitePacketDecoder1_8(Channel channel, ClientHandshakeListener clientHandshakeListener, ClientPacketListener clientPacketListener, Object direction) {
+        super(channel, clientHandshakeListener, clientPacketListener, direction);
     }
 
     @Override
@@ -132,12 +100,7 @@ public class LitePacketDecoder1_8 extends LitePacketDecoder<PacketDataSerializer
                     list.add(packet);
                     LitePacket litePacket = process(protocol.toString(), packetDataSerializer.e(), packetDataSerializer);
                     if (litePacket != null) {
-                        if (litePacket instanceof CHandshakePacket) {
-                            CHandshakePacket handshakePacket = (CHandshakePacket) litePacket;
-                        }
-                        if (player != null) {
-                            packetHandler.onPacketReceive(player, litePacket);
-                        }
+                        invokeListeners(channelHandlerContext, litePacket);
                     }
                 }
             }

@@ -1,57 +1,113 @@
 package me.mat.lite.protocol.connection.decoder;
 
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ByteToMessageDecoder;
 import lombok.Getter;
 import lombok.Setter;
-import me.mat.lite.protocol.connection.PacketHandler;
+import me.mat.lite.protocol.connection.ClientHandshakeListener;
+import me.mat.lite.protocol.connection.ClientPacketListener;
 import me.mat.lite.protocol.connection.packet.LitePacket;
 import me.mat.lite.protocol.connection.packet.LitePacketProvider;
-import me.mat.lite.protocol.util.ReflectionUtil;
 import org.bukkit.entity.Player;
+
+import java.util.ArrayList;
+import java.util.List;
 
 
 public abstract class LitePacketDecoder<T> extends ByteToMessageDecoder {
 
-    private static final Class<?> HANDSHAKE = ReflectionUtil.getMinecraftClass("PacketHandshakingInSetProtocol");
-    private static final Class<?> STATUS = ReflectionUtil.getMinecraftClass("PacketStatusInStart");
-
     // used for storing the player protocol
     protected final Channel channel;
 
-    // used for processing packets
-    protected final PacketHandler packetHandler;
+    // used for passing the handshake packets to the listener
+    protected final ClientHandshakeListener clientHandshakeListener;
+
+    // used for passing the packet calls to the packet listener
+    protected final ClientPacketListener clientPacketListener;
 
     // used for keeping track of the packet direction
     @Getter
     protected final Object direction;
 
-    // used for keeping track of player ids
-    @Getter
-    protected final int id;
-
     // used for sending out the events
     @Setter
     protected Player player;
 
-    public LitePacketDecoder(Channel channel, PacketHandler packetHandler, Object direction, int id) {
+    public LitePacketDecoder(Channel channel, ClientHandshakeListener clientHandshakeListener, ClientPacketListener clientPacketListener, Object direction) {
         this.channel = channel;
-        this.packetHandler = packetHandler;
+        this.clientHandshakeListener = clientHandshakeListener;
+        this.clientPacketListener = clientPacketListener;
         this.direction = direction;
-        this.id = id;
     }
-
-    public abstract LitePacket process(String protocol, int packetID, T serializer);
 
     public abstract Object processField(LitePacket packet, T serializer, Class<?> type);
 
-    protected boolean isStatus(Class<?> cls) {
-        return STATUS.equals(cls);
+    protected void invokeListeners(ChannelHandlerContext context, LitePacket packet) {
+        // if the player instance is invalid
+        if (player == null) {
+            // get the channel
+            Channel channel = context.channel();
+
+            // invoke the client handshake listener
+            clientHandshakeListener.onHandshakeReceive(channel.remoteAddress(), packet);
+
+            // return out of the method
+            return;
+        }
+
+        // else invoke the player packet listener
+        clientPacketListener.onPacketReceive(player, packet);
     }
 
-    protected boolean isHandShake(Class<?> cls) {
-        return HANDSHAKE.equals(cls);
+    /**
+     * Processed all the fields
+     * in the packet
+     *
+     * @param protocol   protocol of the packet
+     * @param packetID   id of the packet
+     * @param serializer serializer that the packet process will use
+     * @return {@link LitePacket}
+     */
+
+    protected LitePacket process(String protocol, int packetID, T serializer) {
+        // get the packet by id
+        LitePacket packet = getPacket(protocol, packetID);
+
+        // if the packet was not fetched
+        if (packet == null) {
+
+            // return out of the method
+            return null;
+        }
+
+        // define the list that will hold all the objects
+        List<Object> objects = new ArrayList<>();
+
+        // loop through all the packet field types
+        for (Class<?> type : packet.getTypes()) {
+            // process the field
+            Object value = processField(packet, serializer, type);
+
+            // add the value to the objects
+            objects.add(value);
+        }
+
+        // process the packet
+        packet.process(objects.toArray());
+
+        // return the packet
+        return packet;
     }
+
+    /**
+     * Gets the LitePacket from the provided
+     * protocol and packet id
+     *
+     * @param protocol protocol that the packet is assigned to
+     * @param packetID id of the packet
+     * @return {@link LitePacket}
+     */
 
     protected LitePacket getPacket(String protocol, int packetID) {
         // attempt to fetch the packet class
@@ -75,9 +131,12 @@ public abstract class LitePacketDecoder<T> extends ByteToMessageDecoder {
                 return (LitePacket) object;
             }
         } catch (InstantiationException | IllegalAccessException e) {
+
+            // if any exceptions occur return null
             return null;
         }
 
+        // else just return null
         return null;
     }
 

@@ -1,4 +1,4 @@
-package me.mat.lite.protocol.connection;
+package me.mat.lite.protocol.connection.listener;
 
 import me.mat.lite.protocol.connection.packet.LitePacket;
 import org.bukkit.entity.Player;

@@ -1,7 +1,6 @@
 package me.mat.lite.protocol.connection;
 
 import io.netty.channel.Channel;
-import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelPipeline;
 import lombok.Getter;
 import me.mat.lite.protocol.connection.decoder.LitePacketDecoder;
@@ -64,6 +63,8 @@ public class PlayerConnection {
 
         // open the connection
         this.open();
+
+        player.sendMessage("Your protocol version: " + connectionManager.getProtocolVersion(player));
     }
 
     /**
@@ -74,7 +75,8 @@ public class PlayerConnection {
         // get the channel
         Channel channel = getChannel();
 
-        System.out.println("Player Address: " + channel.remoteAddress());
+        // update the player protocol
+        connectionManager.setProtocol(player, connectionManager.getProtocolVersion(channel));
 
         // open the connection to the player
         channel.eventLoop().execute(() -> open(channel));
@@ -88,47 +90,47 @@ public class PlayerConnection {
         // get the channel pipeline
         ChannelPipeline pipeline = channel.pipeline();
 
-        // get the decoder
-        Object decoder = pipeline.get(ConnectionManager.DECODER_KEY);
+        // get the vanilla decoder
+        Object vanillaDecoder = pipeline.get(ConnectionManager.VANILLA_DECODER_KEY);
 
-        // if the decoder is invalid
-        if (decoder == null) {
+        // if the vanilla decoder is invalid
+        if (vanillaDecoder == null) {
             // return out of the method
             return;
         }
 
-        // if the decoder is not a lite packet decoder
-        if (!(decoder instanceof LitePacketDecoder)) {
+        // get the direction from the vanilla decoder
+        Object direction = DIRECTION.get(vanillaDecoder);
 
-            // get the direction from the decoder
-            Object direction = DIRECTION.get(decoder);
+        // if the direction is invalid
+        if (direction == null) {
+            // return out of the method
+            return;
+        }
 
-            // if the direction is invalid
-            if (direction == null) {
-                // return out of the method
-                return;
-            }
+        // get the decoder
+        liteDecoder = (LitePacketDecoder<?>) pipeline.get(ConnectionManager.LITE_DECODER_KEY);
 
+        // if the lite decoder is invalid
+        if (liteDecoder == null) {
             // else create the lite decoder
             liteDecoder = new LitePacketDecoder1_8(
                     channel,
+                    connectionManager,
                     connectionManager,
                     connectionManager,
                     direction
             );
 
             // replace the vanilla decoder with the lite decoder
-            pipeline.replace(
-                    ConnectionManager.DECODER_KEY,
-                    ConnectionManager.DECODER_KEY,
+            pipeline.addBefore(
+                    ConnectionManager.VANILLA_DECODER_KEY,
+                    ConnectionManager.LITE_DECODER_KEY,
                     liteDecoder
             );
-        } else {
-            // else save the decoder
-            liteDecoder = (LitePacketDecoder<?>) decoder;
         }
 
-        // update the player instance in the decoder
+        // set the lite decoders player instance
         liteDecoder.setPlayer(player);
     }
 
@@ -167,25 +169,17 @@ public class PlayerConnection {
         ChannelPipeline pipeline = channel.pipeline();
 
         // get the current decoder
-        Object currentDecoder
-                = pipeline.get(ConnectionManager.DECODER_KEY);
+        Object liteDecoder
+                = pipeline.get(ConnectionManager.LITE_DECODER_KEY);
 
         // if the current decoder is invalid
-        if (currentDecoder == null) {
+        if (liteDecoder == null) {
             // return out of the method
             return;
         }
 
-        // create a new vanilla decoder
-        ChannelHandler vanillaDecoder
-                = PACKET_DECODER.newInstance(liteDecoder.getDirection());
-
-        // replace the vanilla decoder with the lite decoder
-        pipeline.replace(
-                ConnectionManager.DECODER_KEY,
-                ConnectionManager.DECODER_KEY,
-                vanillaDecoder
-        );
+        // else remove the lite decoder from the pipeline
+        pipeline.remove(ConnectionManager.LITE_DECODER_KEY);
     }
 
     /**

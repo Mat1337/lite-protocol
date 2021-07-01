@@ -5,12 +5,15 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ByteToMessageDecoder;
 import lombok.Getter;
 import lombok.Setter;
-import me.mat.lite.protocol.connection.ClientHandshakeListener;
-import me.mat.lite.protocol.connection.ClientPacketListener;
+import me.mat.lite.protocol.connection.listener.ClientHandshakeListener;
+import me.mat.lite.protocol.connection.listener.ClientLoginListener;
+import me.mat.lite.protocol.connection.listener.ClientPacketListener;
 import me.mat.lite.protocol.connection.packet.LitePacket;
 import me.mat.lite.protocol.connection.packet.LitePacketProvider;
+import me.mat.lite.protocol.connection.packet.packets.CHandshakePacket;
 import org.bukkit.entity.Player;
 
+import java.net.SocketAddress;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -23,6 +26,9 @@ public abstract class LitePacketDecoder<T> extends ByteToMessageDecoder {
     // used for passing the handshake packets to the listener
     protected final ClientHandshakeListener clientHandshakeListener;
 
+    // used for listening for login packets
+    protected final ClientLoginListener clientLoginListener;
+
     // used for passing the packet calls to the packet listener
     protected final ClientPacketListener clientPacketListener;
 
@@ -34,23 +40,48 @@ public abstract class LitePacketDecoder<T> extends ByteToMessageDecoder {
     @Setter
     protected Player player;
 
-    public LitePacketDecoder(Channel channel, ClientHandshakeListener clientHandshakeListener, ClientPacketListener clientPacketListener, Object direction) {
+    public LitePacketDecoder(Channel channel,
+                             ClientHandshakeListener clientHandshakeListener,
+                             ClientLoginListener clientLoginListener,
+                             ClientPacketListener clientPacketListener,
+                             Object direction) {
         this.channel = channel;
         this.clientHandshakeListener = clientHandshakeListener;
+        this.clientLoginListener = clientLoginListener;
         this.clientPacketListener = clientPacketListener;
         this.direction = direction;
     }
 
     public abstract Object processField(LitePacket packet, T serializer, Class<?> type);
 
-    protected void invokeListeners(ChannelHandlerContext context, LitePacket packet) {
+    protected void invokeListeners(ChannelHandlerContext context, LitePacket packet, boolean handShake, boolean login) {
+        // get the channel
+        Channel channel = context.channel();
+
+        // get the remote address
+        SocketAddress address = channel.remoteAddress();
+
         // if the player instance is invalid
-        if (player == null) {
-            // get the channel
-            Channel channel = context.channel();
+        if (handShake) {
+            // if the packet is a handshake packet
+            if (packet instanceof CHandshakePacket) {
+
+                // cast the packet to the handshake packet
+                CHandshakePacket handshakePacket = (CHandshakePacket) packet;
+
+                // run the client handshake listener set protocol method
+                clientHandshakeListener.setProtocol(channel, handshakePacket.protocolVersion);
+            }
 
             // invoke the client handshake listener
-            clientHandshakeListener.onHandshakeReceive(channel.remoteAddress(), packet);
+            clientHandshakeListener.onHandshakeReceive(address, packet);
+
+            // return out of the method
+            return;
+        } else if (login) {
+
+            // invoke the client login listener
+            clientLoginListener.onLoginReceive(address, packet);
 
             // return out of the method
             return;

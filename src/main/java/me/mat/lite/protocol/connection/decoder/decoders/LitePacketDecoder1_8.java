@@ -3,9 +3,10 @@ package me.mat.lite.protocol.connection.decoder.decoders;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
-import me.mat.lite.protocol.connection.ClientHandshakeListener;
-import me.mat.lite.protocol.connection.ClientPacketListener;
 import me.mat.lite.protocol.connection.decoder.LitePacketDecoder;
+import me.mat.lite.protocol.connection.listener.ClientHandshakeListener;
+import me.mat.lite.protocol.connection.listener.ClientLoginListener;
+import me.mat.lite.protocol.connection.listener.ClientPacketListener;
 import me.mat.lite.protocol.connection.packet.LitePacket;
 import me.mat.lite.protocol.util.BlockPos;
 import me.mat.lite.protocol.util.UnsignedByte;
@@ -20,8 +21,8 @@ import java.util.List;
 
 public class LitePacketDecoder1_8 extends LitePacketDecoder<PacketDataSerializer> {
 
-    public LitePacketDecoder1_8(Channel channel, ClientHandshakeListener clientHandshakeListener, ClientPacketListener clientPacketListener, Object direction) {
-        super(channel, clientHandshakeListener, clientPacketListener, direction);
+    public LitePacketDecoder1_8(Channel channel, ClientHandshakeListener clientHandshakeListener, ClientLoginListener clientLoginListener, ClientPacketListener clientPacketListener, Object direction) {
+        super(channel, clientHandshakeListener, clientLoginListener, clientPacketListener, direction);
     }
 
     @Override
@@ -97,10 +98,16 @@ public class LitePacketDecoder1_8 extends LitePacketDecoder<PacketDataSerializer
                 if (dataSerializer.readableBytes() > 0) {
                     throw new IOException("Packet " + channelHandlerContext.channel().attr(NetworkManager.c).get().a() + "/" + packetID + " (" + packet.getClass().getSimpleName() + ") was larger than I expected, found " + dataSerializer.readableBytes() + " bytes extra whilst reading packet " + packetID);
                 } else {
+                    System.out.println(packet.getClass().getName());
                     list.add(packet);
                     LitePacket litePacket = process(protocol.toString(), packetDataSerializer.e(), packetDataSerializer);
                     if (litePacket != null) {
-                        invokeListeners(channelHandlerContext, litePacket);
+                        invokeListeners(
+                                channelHandlerContext,
+                                litePacket,
+                                protocol.equals(EnumProtocol.HANDSHAKING),
+                                protocol.equals(EnumProtocol.LOGIN)
+                        );
                     }
                 }
             }

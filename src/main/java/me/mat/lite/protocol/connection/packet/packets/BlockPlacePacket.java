@@ -2,6 +2,7 @@ package me.mat.lite.protocol.connection.packet.packets;
 
 import me.mat.lite.protocol.connection.packet.LitePacket;
 import me.mat.lite.protocol.util.BlockPos;
+import me.mat.lite.protocol.util.UnsignedByte;
 import org.bukkit.inventory.ItemStack;
 
 public class BlockPlacePacket extends LitePacket {
@@ -15,7 +16,7 @@ public class BlockPlacePacket extends LitePacket {
     public long timestamp;
 
     public BlockPlacePacket() {
-        super(BlockPos.class, byte.class, ItemStack.class, byte.class, byte.class, byte.class);
+        super(BlockPos.class, UnsignedByte.class, ItemStack.class, UnsignedByte.class, UnsignedByte.class, UnsignedByte.class);
     }
 
     @Override

@@ -3,6 +3,7 @@ package me.mat.lite.protocol.connection.packet.packets;
 import me.mat.lite.protocol.connection.packet.LitePacket;
 import me.mat.lite.protocol.util.BlockPos;
 import me.mat.lite.protocol.util.Direction;
+import me.mat.lite.protocol.util.UnsignedByte;
 
 public class BlockDigPacket extends LitePacket {
 
@@ -11,7 +12,7 @@ public class BlockDigPacket extends LitePacket {
     public Direction direction;
 
     public BlockDigPacket() {
-        super(Type.class, BlockPos.class, byte.class);
+        super(Type.class, BlockPos.class, UnsignedByte.class);
     }
 
     @Override

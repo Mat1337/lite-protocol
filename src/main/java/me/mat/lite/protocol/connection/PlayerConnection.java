@@ -72,11 +72,7 @@ public class PlayerConnection {
             player.sendMessage("Your message: " + chatPacket.message);
         } else if (packet instanceof UseEntityPacket) {
             UseEntityPacket useEntityPacket = (UseEntityPacket) packet;
-            if (useEntityPacket.action == UseEntityPacket.Action.ATTACK) {
-                player.sendMessage("id: " + useEntityPacket.entityID);
-            } else if (useEntityPacket.action == UseEntityPacket.Action.INTERACT_AT) {
-                player.sendMessage("look: " + useEntityPacket.look);
-            }
+            player.sendMessage(useEntityPacket.toString());
         } else if (packet instanceof BlockDigPacket) {
             BlockDigPacket blockDigPacket = (BlockDigPacket) packet;
             if (blockDigPacket.type == BlockDigPacket.Type.RELEASE_USE_ITEM) {
@@ -97,6 +93,27 @@ public class PlayerConnection {
         } else if (packet instanceof ArmAnimationPacket) {
             ArmAnimationPacket armAnimationPacket = (ArmAnimationPacket) packet;
             player.sendMessage("You have swung your arm: " + armAnimationPacket.timestamp);
+        } else if (packet instanceof EntityActionPacket) {
+            EntityActionPacket entityActionPacket = (EntityActionPacket) packet;
+            player.sendMessage("id: " + entityActionPacket.entityID + ", a: " + entityActionPacket.animation.toString());
+        } else if (packet instanceof SteerVehiclePacket) {
+            SteerVehiclePacket steerVehiclePacket = (SteerVehiclePacket) packet;
+            player.sendMessage("fs: " + steerVehiclePacket.forwardSpeed + ", ss: " + steerVehiclePacket.strafeSpeed + ", j: " + steerVehiclePacket.jumping + ", s: " + steerVehiclePacket.sneaking);
+        } else if (packet instanceof CloseWindowPacket) {
+            CloseWindowPacket closeWindowPacket = (CloseWindowPacket) packet;
+            player.sendMessage("You have closed a window with id of: " + closeWindowPacket.id);
+        } else if (packet instanceof WindowClickPacket) {
+            WindowClickPacket windowClickPacket = (WindowClickPacket) packet;
+            player.sendMessage(windowClickPacket.toString());
+        } else if (packet instanceof TransactionPacket) {
+            TransactionPacket transactionPacket = (TransactionPacket) packet;
+            player.sendMessage(transactionPacket.toString());
+        } else if (packet instanceof CreativeSlotPacket) {
+            CreativeSlotPacket creativeSlotPacket = (CreativeSlotPacket) packet;
+            player.sendMessage(creativeSlotPacket.toString());
+        } else if (packet instanceof EnchantItemPacket){
+            EnchantItemPacket enchantItemPacket = (EnchantItemPacket) packet;
+            player.sendMessage(enchantItemPacket.toString());
         }
     }
 
@@ -152,11 +169,22 @@ public class PlayerConnection {
                 = PACKET_DECODER.newInstance(liteDecoder.getDirection());
 
         // remove the handler from the channel
-        channel.eventLoop().execute(() -> channel.pipeline().replace(
-                "decoder",
-                "decoder",
-                packetDecoder
-        ));
+        channel.eventLoop().execute(() -> {
+
+            // if the pipeline does not contain a decoder
+            if (channel.pipeline().get("decoder") == null) {
+
+                // return out of the method
+                return;
+            }
+
+            // replace the pipeline decoder with vanilla decoder
+            channel.pipeline().replace(
+                    "decoder",
+                    "decoder",
+                    packetDecoder
+            );
+        });
 
         // null the lite decoder
         liteDecoder = null;

@@ -1,8 +1,10 @@
 package me.mat.lite.protocol.connection.packet.packets;
 
+import lombok.ToString;
 import me.mat.lite.protocol.connection.packet.LitePacket;
 import me.mat.lite.protocol.util.vector.Vec3f;
 
+@ToString
 public class UseEntityPacket extends LitePacket {
 
     public int entityID;

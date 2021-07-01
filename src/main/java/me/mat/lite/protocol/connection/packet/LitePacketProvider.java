@@ -23,7 +23,14 @@ public class LitePacketProvider {
                 BlockDigPacket.class,
                 BlockPlacePacket.class,
                 HeldItemSlotPacket.class,
-                ArmAnimationPacket.class
+                ArmAnimationPacket.class,
+                EntityActionPacket.class,
+                SteerVehiclePacket.class,
+                CloseWindowPacket.class,
+                WindowClickPacket.class,
+                TransactionPacket.class,
+                CreativeSlotPacket.class,
+                EnchantItemPacket.class
         );
     }
 

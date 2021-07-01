@@ -6,6 +6,7 @@ import me.mat.lite.protocol.connection.PlayerConnection;
 import me.mat.lite.protocol.connection.decoder.LitePacketDecoder;
 import me.mat.lite.protocol.connection.packet.LitePacket;
 import me.mat.lite.protocol.util.BlockPos;
+import me.mat.lite.protocol.util.UnsignedByte;
 import me.mat.lite.protocol.util.vector.Vec3f;
 import net.minecraft.server.v1_8_R3.*;
 import org.bukkit.craftbukkit.v1_8_R3.inventory.CraftItemStack;
@@ -59,6 +60,8 @@ public class LitePacketDecoder1_8 extends LitePacketDecoder<PacketDataSerializer
         }
 
         if (type.equals(byte.class)) {
+            return serializer.readByte();
+        } else if (type.equals(UnsignedByte.class)) {
             return serializer.readUnsignedByte();
         } else if (type.equals(short.class)) {
             return serializer.readShort();

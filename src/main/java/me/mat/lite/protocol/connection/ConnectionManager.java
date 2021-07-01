@@ -9,7 +9,7 @@ import me.mat.lite.protocol.connection.listener.ClientHandshakeListener;
 import me.mat.lite.protocol.connection.listener.ClientLoginListener;
 import me.mat.lite.protocol.connection.listener.ClientPacketListener;
 import me.mat.lite.protocol.connection.packet.LitePacket;
-import me.mat.lite.protocol.connection.packet.packets.CChatPacket;
+import me.mat.lite.protocol.connection.packet.packets.CHandshakePacket;
 import me.mat.lite.protocol.util.ProtocolVersion;
 import me.mat.lite.protocol.util.ReflectionUtil;
 import me.mat.lite.protocol.util.accessor.accessors.FieldAccessor;
@@ -18,6 +18,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerLoginEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.scheduler.BukkitRunnable;
@@ -82,7 +83,7 @@ public class ConnectionManager implements Listener, ClientLoginListener, ClientH
     private ChannelInitializer<Channel> hackyRegister, channelRegister;
 
     // used for storing raw protocols
-    private final Map<Channel, Integer> rawProtocols;
+    private final Map<String, Integer> rawProtocols;
 
     // used for storing player protocols
     private final Map<Player, ProtocolVersion> protocolVersions;
@@ -107,6 +108,18 @@ public class ConnectionManager implements Listener, ClientLoginListener, ClientH
 
     @Override
     public boolean onHandshakeReceive(SocketAddress address, LitePacket packet) {
+        // if the packet is a handshake packet
+        if (packet instanceof CHandshakePacket) {
+            // cast the packet to the handshake packet
+            CHandshakePacket handshakePacket = (CHandshakePacket) packet;
+
+            // get the pure ip address
+            String playerAddress
+                    = address.toString().substring(1).split(":")[0];
+
+            // cache the protocol version
+            rawProtocols.put(playerAddress, handshakePacket.protocolVersion);
+        }
         return false;
     }
 
@@ -117,26 +130,7 @@ public class ConnectionManager implements Listener, ClientLoginListener, ClientH
 
     @Override
     public boolean onPacketReceive(Player player, LitePacket packet) {
-        if (packet instanceof CChatPacket) {
-            CChatPacket chatPacket = (CChatPacket) packet;
-            if (chatPacket.message.equals("/ping")) {
-                player.sendMessage("pong");
-                return true;
-            }
-        }
         return false;
-    }
-
-    @Override
-    public void setProtocol(Channel channel, int protocol) {
-        // put the protocol to the raw channels
-        rawProtocols.put(channel, protocol);
-    }
-
-    @Override
-    public void setProtocol(Player player, int protocol) {
-        // cache the player protocol version
-        protocolVersions.put(player, ProtocolVersion.getVersion(protocol));
     }
 
     /**
@@ -401,23 +395,35 @@ public class ConnectionManager implements Listener, ClientLoginListener, ClientH
     }
 
     /**
+     * Updates players protocol version
+     *
+     * @param player   player that you want to update the version for
+     * @param protocol protocol version that you want to update it to
+     */
+
+    public void setProtocol(Player player, int protocol) {
+        protocolVersions.put(player, ProtocolVersion.getVersion(protocol));
+    }
+
+    /**
      * Gets the channels protocol version
      *
-     * @param channel channel that you want to retrieve the protocol version for
+     * @param address address of the player
      * @return {@link Integer}
      */
 
-    public int getProtocolVersion(Channel channel) {
-        System.out.println(rawProtocols.toString());
+    public int getProtocolVersion(SocketAddress address) {
+        // create the player address
+        String playerAddress = address.toString().substring(1).split(":")[0];
 
         // if the raw protocol does not contain the channel
-        if (!rawProtocols.containsKey(channel)) {
+        if (!rawProtocols.containsKey(playerAddress)) {
             // return -1 as the protocol version
             return -1;
         }
 
         // else return fetch the protocol version from the raw protocols
-        return rawProtocols.get(channel);
+        return rawProtocols.get(playerAddress);
     }
 
     /**

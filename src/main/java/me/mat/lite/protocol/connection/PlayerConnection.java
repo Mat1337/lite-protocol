@@ -78,8 +78,11 @@ public class PlayerConnection {
         // get the channel
         Channel channel = getChannel();
 
-        // update the player protocol
-        connectionManager.setProtocol(player, connectionManager.getProtocolVersion(channel));
+        // get the protocol version based on the address
+        int protocol = connectionManager.getProtocolVersion(channel.remoteAddress());
+
+        // update players protocol version
+        connectionManager.setProtocol(player, protocol);
 
         // open the connection to the player
         channel.eventLoop().execute(() -> open(channel));

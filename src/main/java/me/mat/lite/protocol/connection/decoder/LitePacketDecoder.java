@@ -63,16 +63,6 @@ public abstract class LitePacketDecoder<T> extends ByteToMessageDecoder {
 
         // if the player instance is invalid
         if (handShake) {
-            // if the packet is a handshake packet
-            if (packet instanceof CHandshakePacket) {
-
-                // cast the packet to the handshake packet
-                CHandshakePacket handshakePacket = (CHandshakePacket) packet;
-
-                // run the client handshake listener set protocol method
-                clientHandshakeListener.setProtocol(channel, handshakePacket.protocolVersion);
-            }
-
 
             // invoke the client handshake listener
             return clientHandshakeListener.onHandshakeReceive(address, packet);

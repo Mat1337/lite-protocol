@@ -2,6 +2,8 @@ package me.mat.lite.protocol.connection.packet;
 
 import lombok.Getter;
 
+import java.util.Map;
+
 @Getter
 public abstract class LitePacket {
 
@@ -11,7 +13,11 @@ public abstract class LitePacket {
         this.types = types;
     }
 
-    public abstract void process(Object... values);
+    public void process(Object... values) {
+    }
+
+    public void process(Map<Class<?>, Object> data) {
+    }
 
     public int getStringLength() {
         return 100;

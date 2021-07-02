@@ -7,6 +7,7 @@ import me.mat.lite.protocol.connection.decoder.LitePacketDecoder;
 import me.mat.lite.protocol.connection.decoder.decoders.LitePacketDecoder1_8;
 import me.mat.lite.protocol.connection.encoder.LitePacketEncoder;
 import me.mat.lite.protocol.connection.encoder.encoders.LitePacketEncoder1_8;
+import me.mat.lite.protocol.connection.packet.LitePacket;
 import me.mat.lite.protocol.util.ReflectionUtil;
 import me.mat.lite.protocol.util.accessor.accessors.FieldAccessor;
 import me.mat.lite.protocol.util.accessor.accessors.MethodAccessor;
@@ -57,6 +58,7 @@ public class PlayerConnection {
     private final Player player;
     private final ConnectionManager connectionManager;
 
+    // used for handling players connection
     private LitePacketDecoder<?> liteDecoder;
     private LitePacketEncoder<?> liteEncoder;
 
@@ -166,6 +168,30 @@ public class PlayerConnection {
                             liteEncoder
                     );
                 }
+            }
+        }
+    }
+
+    /**
+     * Send a packet to the player
+     *
+     * @param packet packet that you want to send
+     */
+
+    public void sendPacket(LitePacket packet) {
+        // add the packet to the send queue
+        Class<?> nmsPacketCls = liteEncoder.addToServerSendQueue(packet);
+
+        // if the packet class is valid
+        if (nmsPacketCls != null) {
+            try {
+                // create the nms packet
+                Object nmsPacket = nmsPacketCls.newInstance();
+
+                // and send the packet
+                getChannel().pipeline().writeAndFlush(nmsPacket);
+            } catch (InstantiationException | IllegalAccessException e) {
+                e.printStackTrace();
             }
         }
     }

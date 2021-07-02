@@ -9,7 +9,9 @@ import me.mat.lite.protocol.connection.listener.ClientHandshakeListener;
 import me.mat.lite.protocol.connection.listener.ClientLoginListener;
 import me.mat.lite.protocol.connection.listener.ClientPacketListener;
 import me.mat.lite.protocol.connection.packet.LitePacket;
+import me.mat.lite.protocol.connection.packet.packets.CArmAnimationPacket;
 import me.mat.lite.protocol.connection.packet.packets.CHandshakePacket;
+import me.mat.lite.protocol.connection.packet.packets.server.SKeepAlivePacket;
 import me.mat.lite.protocol.util.ProtocolVersion;
 import me.mat.lite.protocol.util.ReflectionUtil;
 import me.mat.lite.protocol.util.accessor.accessors.FieldAccessor;
@@ -18,13 +20,14 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
-import org.bukkit.event.player.PlayerLoginEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.scheduler.BukkitRunnable;
 
 import java.net.SocketAddress;
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class ConnectionManager implements Listener, ClientLoginListener, ClientHandshakeListener, ClientPacketListener {
 
@@ -76,7 +79,7 @@ public class ConnectionManager implements Listener, ClientLoginListener, ClientH
     );
 
     // used for storing the player connections
-    private final List<PlayerConnection> connections;
+    private final Map<Player, PlayerConnection> connections;
 
     // used for injecting the packet decoder
     private ChannelInboundHandlerAdapter serverRegisterHandler;
@@ -100,7 +103,7 @@ public class ConnectionManager implements Listener, ClientLoginListener, ClientH
         this.protocolVersions = new HashMap<>();
 
         // define the list that will hold all the connections
-        this.connections = new ArrayList<>();
+        this.connections = new HashMap<>();
 
         // load the connection manager
         this.load(plugin);
@@ -130,7 +133,36 @@ public class ConnectionManager implements Listener, ClientLoginListener, ClientH
 
     @Override
     public boolean onPacketReceive(Player player, LitePacket packet) {
+        // if the packet is a arm animation packet
+        if (packet instanceof CArmAnimationPacket) {
+            // send a keep alive right after that
+            sendPacket(player, new SKeepAlivePacket(1337));
+
+            // this is just for testing the packet sending system
+        }
         return false;
+    }
+
+    /**
+     * Sends a provided packet
+     * to the player
+     *
+     * @param player player that you want to send the packet to
+     * @param packet packet that you want to send
+     */
+
+    public void sendPacket(Player player, LitePacket packet) {
+        // get the player connection
+        PlayerConnection playerConnection = connections.get(player);
+
+        // if the player connection is invalid
+        if (playerConnection == null) {
+            // return out of the method
+            return;
+        }
+
+        // else just send the packet
+        playerConnection.sendPacket(packet);
     }
 
     /**
@@ -344,7 +376,7 @@ public class ConnectionManager implements Listener, ClientLoginListener, ClientH
      */
 
     public void addConnection(Player player) {
-        connections.add(new PlayerConnection(
+        connections.put(player, new PlayerConnection(
                 player,
                 this
         ));
@@ -358,19 +390,14 @@ public class ConnectionManager implements Listener, ClientLoginListener, ClientH
      */
 
     public void removeConnection(Player player) {
-        // attempt to find the player connection
-        Optional<PlayerConnection> optional
-                = connections.stream().filter(c -> c.getPlayer().getEntityId() == player.getEntityId()).findFirst();
-
-        // if the player connection was not found
-        if (!optional.isPresent()) {
-
-            // return out of the method
+        // if the connections does not contain the player
+        if (!connections.containsKey(player)) {
+            // Return out of the method
             return;
         }
 
-        // get the player connection instance
-        PlayerConnection playerConnection = optional.get();
+        // get the player connection
+        PlayerConnection playerConnection = connections.get(player);
 
         // close the player connection
         playerConnection.close();
@@ -378,8 +405,8 @@ public class ConnectionManager implements Listener, ClientLoginListener, ClientH
         // remove the protocol version from the cache
         protocolVersions.remove(player);
 
-        // and remove the connection form the connection manager
-        connections.remove(playerConnection);
+        // and remove the player connection
+        connections.remove(player);
     }
 
     /**
@@ -391,7 +418,7 @@ public class ConnectionManager implements Listener, ClientLoginListener, ClientH
      */
 
     public boolean hasConnection(Player player) {
-        return connections.stream().anyMatch(c -> c.getPlayer().getEntityId() == player.getEntityId());
+        return connections.containsKey(player);
     }
 
     /**
@@ -443,7 +470,7 @@ public class ConnectionManager implements Listener, ClientLoginListener, ClientH
 
     public void close() {
         // close all the connections
-        connections.forEach(PlayerConnection::close);
+        connections.values().forEach(PlayerConnection::close);
 
         // and clear the connections list
         connections.clear();

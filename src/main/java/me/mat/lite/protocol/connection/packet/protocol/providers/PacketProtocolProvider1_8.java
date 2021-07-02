@@ -3,7 +3,6 @@ package me.mat.lite.protocol.connection.packet.protocol.providers;
 import me.mat.lite.protocol.connection.packet.protocol.PacketProtocolProvider;
 import net.minecraft.server.v1_8_R3.EnumProtocol;
 import net.minecraft.server.v1_8_R3.EnumProtocolDirection;
-import net.minecraft.server.v1_8_R3.Packet;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -16,18 +15,6 @@ public class PacketProtocolProvider1_8 implements PacketProtocolProvider {
 
     // fetch all the enum protocol values
     private static final EnumProtocol[] PROTOCOLS = EnumProtocol.values();
-
-    @Override
-    public int getPacketID(String protocol, Object packet, String direction) {
-        // get the protocol
-        EnumProtocol enumProtocol = EnumProtocol.valueOf(protocol);
-
-        // get the protocol direction
-        EnumProtocolDirection protocolDirection = EnumProtocolDirection.valueOf(direction);
-
-        // get the packet id and return it
-        return enumProtocol.a(protocolDirection, (Packet<?>) packet);
-    }
 
     @Override
     public Object[] listPackets(String protocol, String direction) {

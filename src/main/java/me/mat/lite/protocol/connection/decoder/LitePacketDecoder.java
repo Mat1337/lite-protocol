@@ -10,7 +10,6 @@ import me.mat.lite.protocol.connection.listener.ClientLoginListener;
 import me.mat.lite.protocol.connection.listener.ClientPacketListener;
 import me.mat.lite.protocol.connection.packet.LitePacket;
 import me.mat.lite.protocol.connection.packet.LitePacketProvider;
-import me.mat.lite.protocol.connection.packet.packets.CHandshakePacket;
 import org.bukkit.entity.Player;
 
 import java.net.SocketAddress;

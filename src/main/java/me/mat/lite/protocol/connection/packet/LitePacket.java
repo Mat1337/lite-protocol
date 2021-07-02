@@ -16,7 +16,7 @@ public abstract class LitePacket {
     public void process(Object... values) {
     }
 
-    public void process(Map<Class<?>, Object> data) {
+    public void process(Map<Object, Class<?>> data) {
     }
 
     public int getStringLength() {

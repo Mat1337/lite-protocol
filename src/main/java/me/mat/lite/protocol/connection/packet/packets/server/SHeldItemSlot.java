@@ -4,21 +4,21 @@ import me.mat.lite.protocol.connection.packet.LitePacket;
 
 import java.util.Map;
 
-public class SKeepAlivePacket extends LitePacket {
+public class SHeldItemSlot extends LitePacket {
 
-    public int key;
+    public int slot;
 
-    public SKeepAlivePacket() {
-        super(int.class);
+    public SHeldItemSlot() {
+        super(byte.class);
     }
 
-    public SKeepAlivePacket(int key) {
-        this.key = key;
+    public SHeldItemSlot(int slot) {
+        this.slot = slot;
     }
 
     @Override
     public void process(Map<Object, Class<?>> data) {
-        data.put(key, int.class);
+        data.put(slot, byte.class);
     }
 
 }

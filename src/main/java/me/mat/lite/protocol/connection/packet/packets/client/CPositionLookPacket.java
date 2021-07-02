@@ -1,4 +1,4 @@
-package me.mat.lite.protocol.connection.packet.packets;
+package me.mat.lite.protocol.connection.packet.packets.client;
 
 public class CPositionLookPacket extends CFlyingPacket {
 

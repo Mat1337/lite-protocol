@@ -1,7 +1,9 @@
 package me.mat.lite.protocol.connection.packet;
 
-import me.mat.lite.protocol.connection.packet.packets.*;
+import me.mat.lite.protocol.connection.packet.packets.client.*;
+import me.mat.lite.protocol.connection.packet.packets.server.SHeldItemSlot;
 import me.mat.lite.protocol.connection.packet.packets.server.SKeepAlivePacket;
+import me.mat.lite.protocol.connection.packet.packets.server.SUpdateTimePacket;
 import me.mat.lite.protocol.connection.packet.protocol.PacketProtocolProvider;
 import me.mat.lite.protocol.connection.packet.protocol.providers.PacketProtocolProvider1_8;
 
@@ -95,6 +97,15 @@ public class LitePacketProvider {
 
     private static void loadPlay() {
         addPlayPacket(ProtocolDirection.CLIENTBOUND, SKeepAlivePacket.class);
+        addPlayPacket(ProtocolDirection.CLIENTBOUND, null);
+        addPlayPacket(ProtocolDirection.CLIENTBOUND, null);
+        addPlayPacket(ProtocolDirection.CLIENTBOUND, SUpdateTimePacket.class);
+        addPlayPacket(ProtocolDirection.CLIENTBOUND, null);
+        addPlayPacket(ProtocolDirection.CLIENTBOUND, null);
+        addPlayPacket(ProtocolDirection.CLIENTBOUND, null);
+        addPlayPacket(ProtocolDirection.CLIENTBOUND, null);
+        addPlayPacket(ProtocolDirection.CLIENTBOUND, null);
+        addPlayPacket(ProtocolDirection.CLIENTBOUND, SHeldItemSlot.class);
         addPlayPacket(ProtocolDirection.SERVERBOUND, CKeepAlivePacket.class);
         addPlayPacket(ProtocolDirection.SERVERBOUND, CChatPacket.class);
         addPlayPacket(ProtocolDirection.SERVERBOUND, CUseEntityPacket.class);

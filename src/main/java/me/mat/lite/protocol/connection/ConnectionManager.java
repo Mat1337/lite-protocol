@@ -8,9 +8,11 @@ import me.mat.lite.protocol.connection.encoder.encoders.LitePacketEncoder1_8;
 import me.mat.lite.protocol.connection.listener.ClientHandshakeListener;
 import me.mat.lite.protocol.connection.listener.ClientLoginListener;
 import me.mat.lite.protocol.connection.listener.ClientPacketListener;
+import me.mat.lite.protocol.connection.listener.ServerPacketListener;
 import me.mat.lite.protocol.connection.packet.LitePacket;
-import me.mat.lite.protocol.connection.packet.packets.CArmAnimationPacket;
-import me.mat.lite.protocol.connection.packet.packets.CHandshakePacket;
+import me.mat.lite.protocol.connection.packet.packets.client.CArmAnimationPacket;
+import me.mat.lite.protocol.connection.packet.packets.client.CHandshakePacket;
+import me.mat.lite.protocol.connection.packet.packets.server.SHeldItemSlot;
 import me.mat.lite.protocol.connection.packet.packets.server.SKeepAlivePacket;
 import me.mat.lite.protocol.util.ProtocolVersion;
 import me.mat.lite.protocol.util.ReflectionUtil;
@@ -28,8 +30,9 @@ import java.net.SocketAddress;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ThreadLocalRandom;
 
-public class ConnectionManager implements Listener, ClientLoginListener, ClientHandshakeListener, ClientPacketListener {
+public class ConnectionManager implements Listener, ClientLoginListener, ClientHandshakeListener, ClientPacketListener, ServerPacketListener {
 
     // name of the vanilla decoder in the pipeline
     public static final String VANILLA_DECODER_KEY = "decoder";
@@ -138,8 +141,16 @@ public class ConnectionManager implements Listener, ClientLoginListener, ClientH
             // send a keep alive right after that
             sendPacket(player, new SKeepAlivePacket(1337));
 
+            // send a held item slot change
+            sendPacket(player, new SHeldItemSlot(Math.abs(ThreadLocalRandom.current().nextInt(8))));
+
             // this is just for testing the packet sending system
         }
+        return false;
+    }
+
+    @Override
+    public boolean onPacketSend(Player player, LitePacket packet) {
         return false;
     }
 
@@ -252,6 +263,9 @@ public class ConnectionManager implements Listener, ClientLoginListener, ClientH
         // create the decoder
         liteEncoder = new LitePacketEncoder1_8(
                 channel,
+                this,
+                this,
+                this,
                 direction
         );
 

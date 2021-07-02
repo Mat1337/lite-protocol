@@ -1,13 +1,17 @@
 package me.mat.lite.protocol.connection.encoder;
 
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToByteEncoder;
+import lombok.Setter;
 import me.mat.lite.protocol.connection.listener.ClientHandshakeListener;
 import me.mat.lite.protocol.connection.listener.ClientLoginListener;
 import me.mat.lite.protocol.connection.listener.ServerPacketListener;
 import me.mat.lite.protocol.connection.packet.LitePacket;
 import me.mat.lite.protocol.connection.packet.LitePacketProvider;
+import org.bukkit.entity.Player;
 
+import java.net.SocketAddress;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -24,6 +28,10 @@ public abstract class LitePacketEncoder<T> extends MessageToByteEncoder<T> {
     // used for queuing and sending packets from the server to the client
     private final Map<Class<?>, LitePacket> sendQueue;
 
+    // used for sending out the events
+    @Setter
+    protected Player player;
+
     public LitePacketEncoder(Channel channel,
                              ClientHandshakeListener clientHandshakeListener,
                              ClientLoginListener clientLoginListener,
@@ -38,6 +46,39 @@ public abstract class LitePacketEncoder<T> extends MessageToByteEncoder<T> {
     }
 
     public abstract void process(Object object, Class<?> type, Object value);
+
+    /**
+     * Invokes the correct listener
+     * for the current packet
+     *
+     * @param context   channel context
+     * @param packet    packet that is being sent
+     * @param handShake flag containing if its a handshake protocol
+     * @param login     flag containing if its a login protocol
+     * @return {@link Boolean}
+     */
+
+    protected boolean invokeListeners(ChannelHandlerContext context, LitePacket packet, boolean handShake, boolean login) {
+        // get the channel
+        Channel channel = context.channel();
+
+        // get the remote address
+        SocketAddress address = channel.remoteAddress();
+
+        // if the player instance is invalid
+        if (handShake) {
+
+            // invoke the client handshake listener
+            return clientHandshakeListener.onHandshakeReceive(address, packet);
+        } else if (login) {
+
+            // invoke the client login listener
+            return clientLoginListener.onLoginReceive(address, packet);
+        }
+
+        // else invoke the player packet listener
+        return serverPacketListener.onPacketSend(player, packet);
+    }
 
     /**
      * Gets the packet from the send queue

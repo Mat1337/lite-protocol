@@ -151,6 +151,10 @@ public class ConnectionManager implements Listener, ClientLoginListener, ClientH
 
     @Override
     public boolean onPacketSend(Player player, LitePacket packet) {
+        if (packet instanceof SHeldItemSlot) {
+            SHeldItemSlot heldItemSlot = (SHeldItemSlot) packet;
+            heldItemSlot.slot = 0;
+        }
         return false;
     }
 

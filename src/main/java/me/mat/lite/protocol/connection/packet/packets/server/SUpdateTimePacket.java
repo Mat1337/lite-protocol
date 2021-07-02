@@ -19,6 +19,12 @@ public class SUpdateTimePacket extends LitePacket {
     }
 
     @Override
+    public void process(Object... values) {
+        totalWorldTime = (long) values[0];
+        worldTime = (long) values[1];
+    }
+
+    @Override
     public void process(Map<Object, Class<?>> data) {
         data.put(totalWorldTime, long.class);
         data.put(worldTime, long.class);

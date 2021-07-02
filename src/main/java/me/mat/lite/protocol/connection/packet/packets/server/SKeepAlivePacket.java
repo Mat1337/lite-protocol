@@ -17,6 +17,11 @@ public class SKeepAlivePacket extends LitePacket {
     }
 
     @Override
+    public void process(Object... values) {
+        key = (int) values[0];
+    }
+
+    @Override
     public void process(Map<Object, Class<?>> data) {
         data.put(key, int.class);
     }

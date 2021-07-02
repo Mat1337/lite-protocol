@@ -17,6 +17,11 @@ public class SHeldItemSlot extends LitePacket {
     }
 
     @Override
+    public void process(Object... values) {
+        slot = (int) values[0];
+    }
+
+    @Override
     public void process(Map<Object, Class<?>> data) {
         data.put(slot, byte.class);
     }

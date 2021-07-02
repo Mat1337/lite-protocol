@@ -158,6 +158,9 @@ public class PlayerConnection {
                     // create the lite encoder
                     liteEncoder = new LitePacketEncoder1_8(
                             channel,
+                            connectionManager,
+                            connectionManager,
+                            connectionManager,
                             direction
                     );
 

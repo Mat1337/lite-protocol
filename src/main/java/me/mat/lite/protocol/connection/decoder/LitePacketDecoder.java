@@ -53,6 +53,17 @@ public abstract class LitePacketDecoder<T> extends ByteToMessageDecoder {
 
     public abstract Object processField(LitePacket packet, T serializer, Class<?> type);
 
+    /**
+     * Invokes the correct listener
+     * for the current packet
+     *
+     * @param context   channel context
+     * @param packet    packet that is being sent
+     * @param handShake flag containing if its a handshake protocol
+     * @param login     flag containing if its a login protocol
+     * @return {@link Boolean}
+     */
+
     protected boolean invokeListeners(ChannelHandlerContext context, LitePacket packet, boolean handShake, boolean login) {
         // get the channel
         Channel channel = context.channel();

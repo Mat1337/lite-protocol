@@ -40,14 +40,18 @@ public class LitePacketEncoder1_8 extends LitePacketEncoder<Packet<?>> {
             throw new IOException("Can't serialize unregistered packet");
         } else {
             PacketDataSerializer serializer = new PacketDataSerializer(byteBuf);
-            serializer.b(packetID);
-
             LitePacket litePacket = getPacket(packet.getClass());
             if (litePacket != null) {
-                Map<Object, Class<?>> dataMap = new HashMap<>();
-                litePacket.process(dataMap);
-                dataMap.forEach((value, type) -> process(serializer, type, value));
+                if (!invokeListeners(channelHandlerContext, litePacket,
+                        protocol.equals(EnumProtocol.HANDSHAKING),
+                        protocol.equals(EnumProtocol.LOGIN))) {
+                    serializer.b(packetID);
+                    Map<Object, Class<?>> dataMap = new HashMap<>();
+                    litePacket.process(dataMap);
+                    dataMap.forEach((value, type) -> process(serializer, type, value));
+                }
             } else {
+                serializer.b(packetID);
                 try {
                     packet.b(serializer);
                 } catch (Throwable e) {
